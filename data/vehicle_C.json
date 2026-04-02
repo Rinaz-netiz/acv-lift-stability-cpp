@@ -1,0 +1,34 @@
+{
+  "name": "Vehicle C",
+  "description": "Half of the vehicle, as per Table 1 in Shabarov et al. (2022)",
+
+  "constants": {
+    "g": 9.81,
+    "rho_air": 1.225,
+    "p_atm": 101325.0,
+    "n_polytropic": 1.4,
+    "chi_outflow": 0.6
+  },
+
+  "geometry": {
+    "m_half_kg": 55350.0,
+    "L_m": 31.5,
+    "l_m": 2.1,
+    "S_m2": 180.0,
+    "W0_m3": 378.0,
+    "I_phi_kgm2": 543.0
+  },
+
+  "equilibrium": {
+    "p0_Pa": 3016.0,
+    "Q0_m3s": 88.38,
+    "phi0_rad": 0.31
+  },
+
+  "derivatives": {
+    "dQin_dp": -0.009,
+    "dM_dphi_per_L": -37405.0,
+    "dM_dphidot": -543.0,
+    "dY_dHdot_factor": -2154.0
+  }
+}
