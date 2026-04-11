@@ -1,4 +1,4 @@
-// include/my_project/analytical.hpp
+// include/my_project/analytical.h
 #pragma once
 #include "vehicle_data.h"
 
