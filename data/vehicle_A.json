@@ -1,29 +1,25 @@
 {
-  "name": "Vehicle A",
-  "constants": {
-    "g": 9.81,
-    "rho_air": 1.225,
-    "p_atm": 101325.0,
-    "n_polytropic": 1.4,
-    "chi_outflow": 0.6
-  },
+  "name": "Vehicle B",
+
   "geometry": {
-    "m_half_kg": 2050.0,
-    "L_m": 10.5,
-    "l_m": 0.7,
-    "S_m2": 20.0,
-    "W0_m3": 14.0,
-    "I_phi_kgm2": 9.35
+    "m": 16400.0,
+    "L": 21.0,
+    "l": 1.4,
+    "S": 80.0,
+    "W0": 112.0,
+    "I_phi": 299.0
   },
+
   "equilibrium": {
-    "p0_Pa": 1005.5,
-    "Q0_m3s": 5.71,
-    "phi0_rad": 0.19
+    "p0": 2011.0,
+    "Q0": 32.79,
+    "phi0": 0.23
   },
+
   "derivatives": {
-    "dQin_dp": -0.002,
-    "dM_dphi_per_L": -2178.0,
-    "dM_dphidot": -3.0,
-    "dY_dHdot_factor": -17836.0
+    "dQin_dp": -0.005,
+    "dM_dphi_per_L": -15570.0,
+    "dM_dphidot": -88.0,
+    "dY_dHdot_factor": -4700.0
   }
 }
