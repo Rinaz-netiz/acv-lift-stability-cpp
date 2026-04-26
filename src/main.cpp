@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "my_project/analytical.h"
+#include "my_project/chec.h"
 #include "my_project/numerical.h"
 
 int main(int argc, char* argv[]) {
@@ -18,4 +19,23 @@ int main(int argc, char* argv[]) {
               << "\n";
     std::cout << "Numerical:  " << (stable_numerical ? "STABLE" : "UNSTABLE")
               << "\n";
+
+    acv::StabilitySolver::Analyze(v);
+
+    try {
+        auto res = acv::AnalyzeStability(v);
+
+        std::cout << "--- Анализ устойчивости ---" << std::endl;
+        std::cout << "Статус: " << (res.is_stable ? "УСТОЙЧИВА" : "НЕУСТОЙЧИВА")
+                  << std::endl;
+        std::cout << "Макс. вещественная часть: " << res.max_real_part
+                  << std::endl;
+
+        for (const auto& ev : res.eigenvalues) {
+            std::cout << "Корень: " << ev.real() << " + " << ev.imag() << "i"
+                      << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+    }
 }
