@@ -13,6 +13,7 @@ add_executable(acv-app
     src/vehicle_data.cpp
     src/analytical.cpp
     src/numerical.cpp
+    src/utils.cpp
 )
 
 target_include_directories(acv-app PRIVATE ${CMAKE_SOURCE_DIR}/include)

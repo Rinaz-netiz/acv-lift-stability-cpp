@@ -30,6 +30,7 @@ struct VehicleData {
     double dQout_dphi;
     double dM_dphi;
     double dY_dHdot;
+    double dQout_dH;
 
     // ===== API =====
     void Init();

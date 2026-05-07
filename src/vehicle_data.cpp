@@ -55,6 +55,8 @@ void VehicleData::ComputeDerivatives() {
     // ===== Cushion =====
     dY_dHdot = dY_dHdot_factor * Q0 * kRhoAir;
 
+    dQout_dH = kChi * L * std::sqrt(2.0 * p0 / kRhoAir);
+
     // ===== sanity =====
     assert(std::isfinite(dQout_dp));
     assert(std::isfinite(dQout_dphi));
