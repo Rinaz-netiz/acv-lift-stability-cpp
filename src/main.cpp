@@ -1,22 +1,33 @@
-#include "my_project/vehicle_data.h"
-#include "my_project/analytical.h"
+// src/main.cpp
 #include <iostream>
 
+#include "my_project/analytical.h"
+#include "my_project/numerical.h"
+#include "my_project/utils.h"
+
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: " << argv[0] << " <vehicle.json>\n";
-        return 1;
+    auto v = acv::loadVehicleFromJson(argv[1]);
+
+    try {
+        auto analytical_res = acv::VerifyAnalyticalDetailed(v);
+        acv::PrintAnalyticalAnalysis(analytical_res);
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
     }
 
     try {
-        auto v = acv::loadVehicleFromJson(argv[1]);
-        bool stable = acv::analyticalVerification(v);
-        std::cout << "Analytical stability check: "
-                  << (stable ? "STABLE" : "UNSTABLE") << "\n";
+        auto res = acv::AnalyzeStabilitySimple(v);
+        std::cout << "Упрощенная модель:\n";
+        acv::PrintResults(res);
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
+        std::cerr << "Ошибка: " << e.what() << std::endl;
     }
 
-    return 0;
+    try {
+        auto res = acv::AnalyzeStabilityFull(v);
+        std::cout << "Полная модель:\n";
+        acv::PrintResults(res);
+    } catch (const std::exception& e) {
+        std::cerr << "Ошибка: " << e.what() << std::endl;
+    }
 }
