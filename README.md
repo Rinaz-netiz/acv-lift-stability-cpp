@@ -10,12 +10,6 @@
 - аналитическую проверку условия устойчивости из статьи:
   "Analytical and numerical investigation of the lift system stability of the air cushion vehicle fitted with closed inflated side seals".
 
-Используются:
-
-- Eigen
-- C++17
-- CMake
-
 ---
 
 ## Возможности
@@ -96,14 +90,19 @@ acv-lift-stability-cpp/
 │
 ├── src/
 │   ├── analytical.cpp
+│   ├── main.cpp
 │   ├── numerical.cpp
 │   ├── utils.cpp
-│   ├── vehicle_data.cpp
-│   └── main.cpp
+│   └── vehicle_data.cpp
 │
 ├── tests/
+│   ├── test_analytical.cpp
+│   ├── test_integration.cpp
+│   ├── test_numerical.cpp
+│   └── test_vehicle_data.cpp
 │
 ├── CMakeLists.txt
+├── compile_commands.json
 └── README.md
 ```
 
@@ -116,29 +115,20 @@ acv-lift-stability-cpp/
 - C++17
 - CMake ≥ 3.15
 - Eigen3
+- GoogleTest (для тестов)
+- vcpkg (рекомендуется)
 
 ---
 
-## Установка Eigen
+## Установка зависимостей
 
----
+**Через vcpkg**
 
-### Ubuntu / Debian
-
-```bash
-sudo apt install libeigen3-dev
-```
-
-### Arch Linux
+Установить:
 
 ```bash
-sudo pacman -S eigen
-```
-
-### macOS
-
-```bash
-brew install eigen
+vcpkg install eigen3
+vcpkg install gtest
 ```
 
 ---
@@ -148,11 +138,23 @@ brew install eigen
 ---
 
 ```bash
-mkdir build
-cd build
+# Сборка с тестами (по умолчанию)
+mkdir build && cd build
+cmake .. -DCMAKE_TOOLCHAIN_FILE=/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build .
 
-cmake ..
-make
+# Запуск всех тестов
+ctest --output-on-failure
+
+# Или напрямую
+./acv-tests
+
+# Запуск конкретного теста
+./acv-tests --gtest_filter=VehicleDataTest.InitComputesDerivativesCorrectly
+
+# Сборка БЕЗ тестов
+cmake .. -DBUILD_TESTS=OFF
+cmake --build .
 ```
 
 После сборки появится исполняемый файл.
