@@ -8,9 +8,6 @@
 int main(int argc, char* argv[]) {
     auto v = acv::loadVehicleFromJson(argv[1]);
 
-    // Аналитическая модель
-    // bool stable_analytical = acv::AnalyticalVerification(v);
-
     try {
         auto analytical_res = acv::VerifyAnalyticalDetailed(v);
         acv::PrintAnalyticalAnalysis(analytical_res);
