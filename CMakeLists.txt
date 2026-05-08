@@ -42,3 +42,30 @@ target_link_libraries(acv-app PRIVATE acv-lib)
 # ============================================
 # Тесты
 # ============================================
+if(BUILD_TESTS)
+    enable_testing()
+
+    # Найти GTest (через vcpkg или системный)
+    find_package(GTest CONFIG REQUIRED)
+
+    # Исполняемый файл с тестами
+    add_executable(acv-tests
+        tests/test_vehicle_data.cpp
+        tests/test_analytical.cpp
+        tests/test_numerical.cpp
+        tests/test_integration.cpp
+    )
+
+    target_link_libraries(acv-tests PRIVATE
+        acv-lib
+        GTest::gtest
+        GTest::gtest_main
+    )
+
+    # Автоматическое обнаружение тестов
+    include(GoogleTest)
+    gtest_discover_tests(acv-tests)
+
+    # Альтернативный способ (если gtest_discover_tests не работает)
+    # add_test(NAME acv-tests COMMAND acv-tests)
+endif()

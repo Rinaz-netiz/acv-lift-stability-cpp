@@ -1,6 +1,5 @@
 // include/my_project/vehicle_data.h
 #pragma once
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -49,6 +48,20 @@ struct SealMomentCurve {
     double Derivative(double phi, double L) const;  // N·m/rad,  < 0
 };
 
+struct SealDampingCurve {
+    std::vector<double> h_gap_table;       // m
+    std::vector<double> dM_dphidot_table;  // N·m·s/rad (<0)
+
+    double Value(double h_gap) const;  // линейная интерполяция
+};
+
+struct CushionDampingCurve {
+    std::vector<double> Sgap_over_S_table;  // (-)
+    std::vector<double> D_table;            // (-), как в Eq.(13)
+
+    double Value(double Sgap_over_S) const;  // линейная интерполяция
+};
+
 // ============================================================
 // Результат вычисления равновесия и производных
 // ============================================================
@@ -91,6 +104,8 @@ struct VehicleData {
     VehicleGeometry geometry;
     BlowerCurve blower;
     SealMomentCurve seal_moment;
+    SealDampingCurve seal_damping_curve;
+    CushionDampingCurve cushion_damping_curve;
 
     // Демпфирование ограждения dM/dφ̇ — из CFD (Section 2.2.2)
     // Задаётся как константа (в статье — рис. 9, значения из Table 1)
