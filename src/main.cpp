@@ -6,7 +6,7 @@
 #include "my_project/utils.h"
 
 int main(int argc, char* argv[]) {
-    auto v = acv::loadVehicleFromJson(argv[1]);
+    auto v = acv::LoadVehicleFromJson(argv[1]);
 
     try {
         auto analytical_res = acv::VerifyAnalyticalDetailed(v);
@@ -30,4 +30,6 @@ int main(int argc, char* argv[]) {
     } catch (const std::exception& e) {
         std::cerr << "Ошибка: " << e.what() << std::endl;
     }
+
+    acv::PrintVehicleTable(v);
 }

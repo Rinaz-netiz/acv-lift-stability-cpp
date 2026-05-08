@@ -1,25 +1,25 @@
 {
-  "name": "Vehicle B",
-
+  "name": "Vehicle B (Medium ACV)",
   "geometry": {
-    "m": 16400.0,
-    "L": 21.0,
-    "l": 1.4,
+    "m": 18000.0,
+    "L": 16.0,
+    "l": 0.5,
     "S": 80.0,
-    "W0": 112.0,
-    "I_phi": 299.0
+    "W0": 40.0,
+    "I_phi": 1200.0,
+    "h0": 0.15
   },
-
-  "equilibrium": {
-    "p0": 2011.0,
-    "Q0": 32.79,
-    "phi0": 0.23
+  "blower": {
+    "type": "linear",
+    "Q_max": 25.0,
+    "k_fan": 0.00005
   },
-
-  "derivatives": {
-    "dQin_dp": -0.005,
-    "dM_dphi_per_L": -15570.0,
-    "dM_dphidot": -88.0,
-    "dY_dHdot_factor": -4700.0
+  "seal": {
+    "k_seal_per_L": 180.0,
+    "k_phi": 55.0,
+    "c_phi": 90.0
+  },
+  "damping": {
+    "beta_cushion": 0.35
   }
 }

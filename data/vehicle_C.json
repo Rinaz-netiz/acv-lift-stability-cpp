@@ -1,25 +1,25 @@
 {
-  "name": "Vehicle C",
-
+  "name": "Vehicle C (Heavy ACV)",
   "geometry": {
-    "m": 55350.0,
-    "L": 31.5,
-    "l": 2.1,
-    "S": 180.0,
-    "W0": 378.0,
-    "I_phi": 543.0
+    "m": 45000.0,
+    "L": 25.0,
+    "l": 0.8,
+    "S": 150.0,
+    "W0": 120.0,
+    "I_phi": 3500.0,
+    "h0": 0.25
   },
-
-  "equilibrium": {
-    "p0": 3016.0,
-    "Q0": 88.38,
-    "phi0": 0.31
+  "blower": {
+    "type": "linear",
+    "Q_max": 50.0,
+    "k_fan": 0.00008
   },
-
-  "derivatives": {
-    "dQin_dp": -0.009,
-    "dM_dphi_per_L": -37405.0,
-    "dM_dphidot": -543.0,
-    "dY_dHdot_factor": -2154.0
+  "seal": {
+    "k_seal_per_L": 250.0,
+    "k_phi": 70.0,
+    "c_phi": 150.0
+  },
+  "damping": {
+    "beta_cushion": 0.45
   }
 }

@@ -10,4 +10,6 @@ void PrintAnalyticalAnalysis(const AnalyticalResult& res);
 
 void PrintResults(const StabilityResult& res);
 
+void PrintVehicleTable(const VehicleData& data);
+
 }  // namespace acv
