@@ -1,10 +1,13 @@
 // src/vehicle_data.cpp
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <fstream>
+#include <iterator>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <vector>
 
 #include "my_project/constants.h"
 #include "my_project/vehicle_data.h"
@@ -15,36 +18,61 @@ namespace acv {
 // Linear interpolation
 // ============================================================
 
+/**
+ * Вспомогательная функция для поиска индекса правого края интервала.
+ * Возвращает индекс i, такой что x находится между xs[i-1] и xs[i].
+ */
+static size_t FindInterval(const std::vector<double>& xs, double x) {
+    // Бинарный поиск: ищем первый элемент, который не меньше x
+    auto it = std::lower_bound(xs.begin(), xs.end(), x);
+
+    // Если x <= xs.front(), lower_bound вернет begin()
+    if (it == xs.begin()) return 1;
+    // Если x больше последнего, вернет end()
+    if (it == xs.end()) return xs.size() - 1;
+
+    return std::distance(xs.begin(), it);
+}
+
 static double LinearInterp(const std::vector<double>& xs,
                            const std::vector<double>& ys, double x) {
-    if (xs.size() < 2)
-        throw std::runtime_error("Interpolation table too small");
+    const size_t n = xs.size();
+    if (n < 2) throw std::runtime_error("Interpolation table too small");
 
+    // Граничные условия (Clamping)
     if (x <= xs.front()) return ys.front();
     if (x >= xs.back()) return ys.back();
 
-    size_t i = 1;
-    while (i < xs.size() - 1 && xs[i] < x) ++i;
+    // Быстрый поиск нужного интервала O(log N)
+    size_t i = FindInterval(xs, x);
 
-    double t = (x - xs[i - 1]) / (xs[i] - xs[i - 1]);
+    double dx = xs[i] - xs[i - 1];
+    if (dx == 0.0) return ys[i - 1];  // Защита от деления на 0
+
+    double t = (x - xs[i - 1]) / dx;
     return ys[i - 1] + t * (ys[i] - ys[i - 1]);
 }
 
 static double LinearInterpDerivative(const std::vector<double>& xs,
                                      const std::vector<double>& ys, double x) {
-    if (xs.size() < 2)
-        throw std::runtime_error("Interpolation table too small");
+    const size_t n = xs.size();
+    if (n < 2) throw std::runtime_error("Interpolation table too small");
 
-    if (x <= xs.front()) return (ys[1] - ys[0]) / (xs[1] - xs[0]);
-    if (x >= xs.back()) {
-        size_t n = xs.size();
-        return (ys[n - 1] - ys[n - 2]) / (xs[n - 1] - xs[n - 2]);
+    // Для производной на границах и за ними возвращаем наклон крайних сегментов
+    size_t i;
+    if (x <= xs.front()) {
+        i = 1;
+    } else if (x >= xs.back()) {
+        i = n - 1;
+    } else {
+        i = FindInterval(xs, x);
     }
 
-    size_t i = 1;
-    while (i < xs.size() - 1 && xs[i] < x) ++i;
+    double dx = xs[i] - xs[i - 1];
+    if (dx == 0.0)
+        return 0.0;  // Наклон вертикальной линии неопределен, возвращаем 0
 
-    return (ys[i] - ys[i - 1]) / (xs[i] - xs[i - 1]);
+    return (ys[i] - ys[i - 1]) / dx;
 }
 
 // ============================================================

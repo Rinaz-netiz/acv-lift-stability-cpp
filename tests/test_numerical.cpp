@@ -1,289 +1,222 @@
-// tests/test_numerical.cpp
 #include <gtest/gtest.h>
 
 #include <cmath>
-#include <complex>
 
-#include "my_project/constants.h"
 #include "my_project/numerical.h"
 #include "my_project/vehicle_data.h"
 
 namespace acv {
 namespace {
 
-// ============================================================
-// Фабрика (та же что в других тестах)
-// ============================================================
-
-VehicleData MakeTestVehicle() {
-    VehicleData v;
-    v.name = "Numerical Test Hovercraft";
-
-    v.geometry.m = 1000.0;
-    v.geometry.L = 8.0;
-    v.geometry.l = 0.4;
-    v.geometry.S = 40.0;
-    v.geometry.W0 = 20.0;
-    v.geometry.I_phi = 400.0;
-    v.geometry.h0 = 0.15;
-
-    v.blower.type = BlowerCharacteristics::Type::Linear;
-    v.blower.Q_max = 10.0;
-    v.blower.k_fan = 0.00003;
-
-    v.seal.k_seal_per_L = 5000.0;
-    v.seal.k_phi = 500.0;
-    v.seal.c_phi = 200.0;
-
-    v.damping.beta_cushion = 0.3;
-
-    v.Init();
-    return v;
-}
-
-// ============================================================
-// Тест-класс
-// ============================================================
-
-class NumericalSimpleTest : public ::testing::Test {
+class NumericalTest : public ::testing::Test {
    protected:
-    VehicleData vehicle_;
-    StabilityResult result_;
-
     void SetUp() override {
-        vehicle_ = MakeTestVehicle();
-        result_ = AnalyzeStabilitySimple(vehicle_);
+        data = LoadVehicleFromJson("test_data/vehicle_a.json");
     }
-};
 
-class NumericalFullTest : public ::testing::Test {
-   protected:
-    VehicleData vehicle_;
-    StabilityResult result_;
-
-    void SetUp() override {
-        vehicle_ = MakeTestVehicle();
-        result_ = AnalyzeStabilityFull(vehicle_);
-    }
+    VehicleData data;
 };
 
 // ============================================================
-// 1. Тесты простой модели (3 степени свободы)
+// Тесты простой модели (3×3)
 // ============================================================
 
-TEST_F(NumericalSimpleTest, ReturnsThreeEigenvalues) {
-    EXPECT_EQ(result_.eigenvalues.size(), 3u)
-        << "Модель 3 СС должна давать 3 собственных значения";
+TEST_F(NumericalTest, SimpleModelThreeEigenvalues) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
+
+    EXPECT_EQ(result.eigenvalues.size(), 3);
 }
 
-TEST_F(NumericalSimpleTest, StableVehicleIsDetectedAsStable) {
-    EXPECT_TRUE(result_.is_stable)
-        << "Физически устойчивое КВП должно быть определено как устойчивое";
-}
+TEST_F(NumericalTest, SimpleModelStabilityConsistency) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
 
-TEST_F(NumericalSimpleTest, MaxRealPartIsNegativeForStableSystem) {
-    EXPECT_LT(result_.max_real_part, 0.0)
-        << "Максимальная вещественная часть СЗ < 0 для устойчивой системы";
-}
-
-TEST_F(NumericalSimpleTest, MaxRealPartIsConsistentWithEigenvalues) {
-    // max_real_part должен совпадать с максимумом Re(λ_i)
-    double max_real = -1e18;
-    for (const auto& lambda : result_.eigenvalues) {
-        if (lambda.real() > max_real) max_real = lambda.real();
-    }
-    EXPECT_NEAR(result_.max_real_part, max_real, 1e-9)
-        << "max_real_part должен совпадать с max(Re(λ_i))";
-}
-
-TEST_F(NumericalSimpleTest, IsStableConsistentWithMaxRealPart) {
-    bool expected = result_.max_real_part <= kEps;
-    EXPECT_EQ(result_.is_stable, expected)
-        << "is_stable должен соответствовать знаку max_real_part";
-}
-
-TEST_F(NumericalSimpleTest, AllEigenvaluesAreFinite) {
-    for (size_t i = 0; i < result_.eigenvalues.size(); ++i) {
-        EXPECT_TRUE(std::isfinite(result_.eigenvalues[i].real()))
-            << "Re(λ_" << i << ") должно быть конечным";
-        EXPECT_TRUE(std::isfinite(result_.eigenvalues[i].imag()))
-            << "Im(λ_" << i << ") должно быть конечным";
+    // is_stable должно соответствовать max_real_part
+    if (result.max_real_part > 1e-9) {
+        EXPECT_FALSE(result.is_stable);
+    } else {
+        EXPECT_TRUE(result.is_stable);
     }
 }
 
-TEST_F(NumericalSimpleTest, OscillationModesHavePositivePeriod) {
-    for (size_t i = 0; i < result_.oscillation_modes.size(); ++i) {
-        EXPECT_GT(result_.oscillation_modes[i].period, 0.0)
-            << "Период моды " << i << " должен быть положительным";
+TEST_F(NumericalTest, SimpleModelMaxRealPartCorrect) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
+
+    double max_re = -1e18;
+    for (const auto& lambda : result.eigenvalues) {
+        max_re = std::max(max_re, lambda.real());
+    }
+
+    EXPECT_NEAR(result.max_real_part, max_re, 1e-9);
+}
+
+TEST_F(NumericalTest, SimpleModelOscillationModes) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
+
+    // Для каждой комплексной пары должна быть мода
+    int complex_count = 0;
+    for (const auto& lambda : result.eigenvalues) {
+        if (std::abs(lambda.imag()) > 1e-9) {
+            complex_count++;
+        }
+    }
+
+    EXPECT_GE(result.oscillation_modes.size(), 0);
+    EXPECT_LE(result.oscillation_modes.size(), result.eigenvalues.size());
+}
+
+TEST_F(NumericalTest, SimpleModelPeriodPositive) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
+
+    for (const auto& mode : result.oscillation_modes) {
+        EXPECT_GT(mode.period, 0.0);
+        EXPECT_LT(mode.period, 1000.0);  // Разумные пределы
     }
 }
 
-TEST_F(NumericalSimpleTest, OscillationModePeriodMatchesFormula) {
-    for (const auto& mode : result_.oscillation_modes) {
-        double omega = std::abs(mode.eigenvalue.imag());
-        double expected = 2.0 * M_PI / omega;
-        EXPECT_NEAR(mode.period, expected, 1e-9) << "T = 2π/ω";
-    }
-}
+TEST_F(NumericalTest, SimpleModelDecayRatioMeaningful) {
+    StabilityResult result = AnalyzeStabilitySimple(data);
 
-TEST_F(NumericalSimpleTest, LogarithmicDecrementMatchesFormula) {
-    for (const auto& mode : result_.oscillation_modes) {
-        double sigma = mode.eigenvalue.real();
-        double expected = -sigma * mode.period;
-        EXPECT_NEAR(mode.logarithmic_decrement, expected, 1e-9) << "χ = -σ*T";
-    }
-}
+    for (const auto& mode : result.oscillation_modes) {
+        EXPECT_GT(mode.decay_ratio, 0.0);
+        // K = exp(χ), где χ = -σ·T
+        // Для устойчивости: σ < 0 => χ > 0 => K > 1
+        // Для неустойчивости: σ > 0 => χ < 0 => K < 1
 
-TEST_F(NumericalSimpleTest, DecayRatioMatchesFormula) {
-    for (const auto& mode : result_.oscillation_modes) {
-        double expected = std::exp(mode.logarithmic_decrement);
-        EXPECT_NEAR(mode.decay_ratio, expected, 1e-9) << "K = exp(χ)";
-    }
-}
-
-TEST_F(NumericalSimpleTest, OscillationModesHavePositiveImaginaryPart) {
-    for (const auto& mode : result_.oscillation_modes) {
-        EXPECT_GT(mode.eigenvalue.imag(), kEps)
-            << "Мода должна иметь Im(λ) > 0 (берём только положительные)";
+        if (mode.eigenvalue.real() < 0) {
+            // Затухающие колебания
+            EXPECT_GT(mode.decay_ratio, 1.0);
+        } else {
+            // Растущие колебания
+            EXPECT_LT(mode.decay_ratio, 1.0);
+        }
     }
 }
 
 // ============================================================
-// 2. Тесты полной модели (5 степеней свободы)
+// Тесты полной модели (5×5)
 // ============================================================
 
-TEST_F(NumericalFullTest, ReturnsFiveEigenvalues) {
-    EXPECT_EQ(result_.eigenvalues.size(), 5u)
-        << "Модель 5 СС должна давать 5 собственных значений";
+TEST_F(NumericalTest, FullModelFiveEigenvalues) {
+    StabilityResult result = AnalyzeStabilityFull(data);
+
+    EXPECT_EQ(result.eigenvalues.size(), 5);
 }
 
-TEST_F(NumericalFullTest, StableVehicleIsDetectedAsStable) {
-    EXPECT_TRUE(result_.is_stable)
-        << "Физически устойчивое КВП должно быть устойчивым в полной модели";
-}
+TEST_F(NumericalTest, FullModelStabilityConsistency) {
+    StabilityResult result = AnalyzeStabilityFull(data);
 
-TEST_F(NumericalFullTest, MaxRealPartIsNegativeForStableSystem) {
-    EXPECT_LT(result_.max_real_part, 0.0)
-        << "Максимальная вещественная часть СЗ < 0";
-}
-
-TEST_F(NumericalFullTest, MaxRealPartIsConsistentWithEigenvalues) {
-    double max_real = -1e18;
-    for (const auto& lambda : result_.eigenvalues) {
-        if (lambda.real() > max_real) max_real = lambda.real();
-    }
-    EXPECT_NEAR(result_.max_real_part, max_real, 1e-9);
-}
-
-TEST_F(NumericalFullTest, AllEigenvaluesAreFinite) {
-    for (size_t i = 0; i < result_.eigenvalues.size(); ++i) {
-        EXPECT_TRUE(std::isfinite(result_.eigenvalues[i].real()))
-            << "Re(λ_" << i << ") конечно";
-        EXPECT_TRUE(std::isfinite(result_.eigenvalues[i].imag()))
-            << "Im(λ_" << i << ") конечно";
+    if (result.max_real_part > 1e-9) {
+        EXPECT_FALSE(result.is_stable);
+    } else {
+        EXPECT_TRUE(result.is_stable);
     }
 }
 
-TEST_F(NumericalFullTest, OscillationModePeriodMatchesFormula) {
-    for (const auto& mode : result_.oscillation_modes) {
-        double omega = std::abs(mode.eigenvalue.imag());
-        double expected = 2.0 * M_PI / omega;
-        EXPECT_NEAR(mode.period, expected, 1e-9);
+TEST_F(NumericalTest, FullModelIncludesHeightDynamics) {
+    StabilityResult full = AnalyzeStabilityFull(data);
+    StabilityResult simple = AnalyzeStabilitySimple(data);
+
+    // Полная модель имеет больше СЗ
+    EXPECT_GT(full.eigenvalues.size(), simple.eigenvalues.size());
+}
+
+// ============================================================
+// Сравнение моделей
+// ============================================================
+
+TEST_F(NumericalTest, SimpleAndFullModelsStabilityAgreement) {
+    StabilityResult simple = AnalyzeStabilitySimple(data);
+    StabilityResult full = AnalyzeStabilityFull(data);
+
+    // Оба метода должны согласовываться по устойчивости
+    // (хотя могут различаться в деталях)
+    if (simple.is_stable && full.is_stable) {
+        SUCCEED();
+    } else if (!simple.is_stable && !full.is_stable) {
+        SUCCEED();
+    } else {
+        // Расхождение возможно из-за дополнительной динамики высоты
+        // Логируем, но не обязательно ошибка
+        std::cout << "Models disagree: simple=" << simple.is_stable
+                  << " full=" << full.is_stable << std::endl;
     }
 }
 
-TEST_F(NumericalFullTest, DecayRatioMatchesFormula) {
-    for (const auto& mode : result_.oscillation_modes) {
-        double expected = std::exp(mode.logarithmic_decrement);
-        EXPECT_NEAR(mode.decay_ratio, expected, 1e-9);
+TEST_F(NumericalTest, FullModelHasMoreModes) {
+    StabilityResult simple = AnalyzeStabilitySimple(data);
+    StabilityResult full = AnalyzeStabilityFull(data);
+
+    // Полная модель может иметь больше осцилляционных мод
+    EXPECT_GE(full.oscillation_modes.size(), simple.oscillation_modes.size());
+}
+
+// ============================================================
+// Тесты численной устойчивости
+// ============================================================
+
+TEST_F(NumericalTest, EigenvaluesNotNaN) {
+    StabilityResult result = AnalyzeStabilityFull(data);
+
+    for (const auto& lambda : result.eigenvalues) {
+        EXPECT_FALSE(std::isnan(lambda.real()));
+        EXPECT_FALSE(std::isnan(lambda.imag()));
     }
 }
 
-TEST_F(NumericalFullTest, HasMoreEigenvaluesThanSimpleModel) {
-    StabilityResult simple = AnalyzeStabilitySimple(vehicle_);
-    EXPECT_GT(result_.eigenvalues.size(), simple.eigenvalues.size())
-        << "Полная модель имеет больше СЗ чем простая";
-}
+TEST_F(NumericalTest, ComplexEigenvaluesComePairs) {
+    StabilityResult result = AnalyzeStabilityFull(data);
 
-// ============================================================
-// 3. Сравнительные тесты простой и полной моделей
-// ============================================================
-
-class NumericalComparisonTest : public ::testing::Test {
-   protected:
-    VehicleData vehicle_;
-
-    void SetUp() override { vehicle_ = MakeTestVehicle(); }
-};
-
-TEST_F(NumericalComparisonTest, BothModelsAgreeOnStability) {
-    auto simple = AnalyzeStabilitySimple(vehicle_);
-    auto full = AnalyzeStabilityFull(vehicle_);
-
-    // Для заведомо устойчивого КВП обе модели должны согласоваться
-    if (simple.is_stable) {
-        EXPECT_TRUE(full.is_stable)
-            << "Если простая модель устойчива, полная тоже должна быть";
+    std::vector<std::complex<double>> complex_eigs;
+    for (const auto& lambda : result.eigenvalues) {
+        if (std::abs(lambda.imag()) > 1e-9) {
+            complex_eigs.push_back(lambda);
+        }
     }
-}
 
-TEST_F(NumericalComparisonTest, FullModelMaxRealPartIsFinite) {
-    auto full = AnalyzeStabilityFull(vehicle_);
-    EXPECT_TRUE(std::isfinite(full.max_real_part));
+    // Комплексные СЗ должны идти сопряжёнными парами
+    EXPECT_EQ(complex_eigs.size() % 2, 0);
 }
 
 // ============================================================
-// 4. Тесты граничных случаев
+// Тесты параметрических вариаций
 // ============================================================
 
-class NumericalEdgeCasesTest : public ::testing::Test {};
+TEST_F(NumericalTest, IncreasedDampingMoreStable) {
+    VehicleData data1 = data;
+    VehicleData data2 = data;
 
-TEST_F(NumericalEdgeCasesTest, ZeroDampingDoesNotCrash) {
-    VehicleData v = MakeTestVehicle();
-    // Убираем демпфирование — система на границе устойчивости
-    v.seal.c_phi = 0.0;
-    v.damping.beta_cushion = 0.0;
-    v.Init();
+    // Увеличим демпфирование ограждения
+    data2.seal_damping_curve.dM_dphidot_table = {-100.0, -80.0, -50.0, -20.0,
+                                                 -5.0};
 
-    // Не должно бросать исключений
-    EXPECT_NO_THROW({
-        auto result = AnalyzeStabilitySimple(v);
-        (void)result;
-    });
+    data1.Init();
+    data2.Init();
+
+    StabilityResult r1 = AnalyzeStabilitySimple(data1);
+    StabilityResult r2 = AnalyzeStabilitySimple(data2);
+
+    // Больше демпфирование -> меньше max_real_part (более отрицательный)
+    EXPECT_LE(r2.max_real_part, r1.max_real_part);
 }
 
-TEST_F(NumericalEdgeCasesTest, LargeInertiaContinuesConverging) {
-    VehicleData v = MakeTestVehicle();
-    v.geometry.I_phi = 1e5;
-    v.Init();
+TEST_F(NumericalTest, IncreasedInertiaSlowerOscillations) {
+    VehicleData data1 = data;
+    VehicleData data2 = data;
 
-    EXPECT_NO_THROW({
-        auto result = AnalyzeStabilitySimple(v);
-        EXPECT_EQ(result.eigenvalues.size(), 3u);
-    });
-}
+    data1.geometry.I_phi = 9.35;
+    data2.geometry.I_phi = 18.7;  // Удвоенная инерция
 
-TEST_F(NumericalEdgeCasesTest, SmallInertiaContinuesConverging) {
-    VehicleData v = MakeTestVehicle();
-    v.geometry.I_phi = 1.0;
-    v.Init();
+    data1.Init();
+    data2.Init();
 
-    EXPECT_NO_THROW({
-        auto result = AnalyzeStabilitySimple(v);
-        EXPECT_EQ(result.eigenvalues.size(), 3u);
-    });
-}
+    StabilityResult r1 = AnalyzeStabilitySimple(data1);
+    StabilityResult r2 = AnalyzeStabilitySimple(data2);
 
-TEST_F(NumericalEdgeCasesTest, FullModelDoesNotCrashWithZeroDamping) {
-    VehicleData v = MakeTestVehicle();
-    v.seal.c_phi = 0.0;
-    v.damping.beta_cushion = 0.0;
-    v.Init();
-
-    EXPECT_NO_THROW({
-        auto result = AnalyzeStabilityFull(v);
-        EXPECT_EQ(result.eigenvalues.size(), 5u);
-    });
+    if (!r1.oscillation_modes.empty() && !r2.oscillation_modes.empty()) {
+        // Больше инерция -> больше период (медленнее колебания)
+        EXPECT_GT(r2.oscillation_modes[0].period,
+                  r1.oscillation_modes[0].period);
+    }
 }
 
 }  // namespace

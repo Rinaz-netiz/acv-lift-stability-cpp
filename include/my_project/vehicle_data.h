@@ -101,25 +101,25 @@ struct VehicleData {
     std::string name;
 
     // ===== Входные данные =====
-    VehicleGeometry geometry;
-    BlowerCurve blower;
-    SealMomentCurve seal_moment;
-    SealDampingCurve seal_damping_curve;
-    CushionDampingCurve cushion_damping_curve;
+    VehicleGeometry geometry{};
+    BlowerCurve blower{};
+    SealMomentCurve seal_moment{};
+    SealDampingCurve seal_damping_curve{};
+    CushionDampingCurve cushion_damping_curve{};
 
     // Демпфирование ограждения dM/dφ̇ — из CFD (Section 2.2.2)
     // Задаётся как константа (в статье — рис. 9, значения из Table 1)
-    double dM_dphidot_input;  // N·m·s/rad,  < 0
+    double dM_dphidot_input = -1.0;  // N·m·s/rad,  < 0
 
     // Демпфирование подушки dY/dḢ — из Eq. (13) и CFD (рис. 4)
     // dY/dHdot = D(h_gap) * rho * (-Q_in/S) * S
     // D берётся из рис. 4 для h_gap0
     // Задаём как: dY_dHdot = D_coeff * rho * Q0  (с нужным знаком)
-    double D_damping;  // коэффициент D из рис. 4 (положительный)
+    double D_damping = 0.0;  // коэффициент D из рис. 4 (положительный)
 
     // ===== Вычисляемые результаты =====
-    EquilibriumState eq;        // Равновесие
-    LinearizedDerivatives der;  // Производные
+    EquilibriumState eq{};        // Равновесие
+    LinearizedDerivatives der{};  // Производные
 
     // ===== API =====
     void Init();  // Вычислить eq и der, проверить

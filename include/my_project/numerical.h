@@ -7,8 +7,6 @@
 
 namespace acv {
 
-inline constexpr double kEps = 1e-9;
-
 struct OscillationMode {
     std::complex<double> eigenvalue;
 

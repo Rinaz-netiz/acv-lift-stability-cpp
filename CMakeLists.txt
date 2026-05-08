@@ -48,6 +48,12 @@ if(BUILD_TESTS)
     # Найти GTest (через vcpkg или системный)
     find_package(GTest CONFIG REQUIRED)
 
+    configure_file(
+        ${CMAKE_SOURCE_DIR}/test_data/vehicle_a.json
+        ${CMAKE_CURRENT_BINARY_DIR}/test_data/vehicle_a.json
+        COPYONLY
+    )
+
     # Исполняемый файл с тестами
     add_executable(acv-tests
         tests/test_vehicle_data.cpp
