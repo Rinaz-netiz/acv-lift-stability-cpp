@@ -33,35 +33,8 @@ StabilityResult AnalyzeStabilitySimple(const VehicleData& data) {
 
     // Решение задачи на СЗ
     Eigen::EigenSolver<Eigen::Matrix3d> solver(A);
-    // ... остальной код функции без изменений ...
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigen solver failed to converge.");
-    }
 
-    StabilityResult result;
-    result.max_real_part = -1e18;
-    result.is_stable = true;
-
-    auto evals = solver.eigenvalues();
-    for (int i = 0; i < evals.size(); ++i) {
-        std::complex<double> lambda = evals[i];
-        result.eigenvalues.push_back(lambda);
-        if (lambda.real() > result.max_real_part)
-            result.max_real_part = lambda.real();
-        if (lambda.real() > kEps) result.is_stable = false;
-
-        if (std::abs(lambda.imag()) > kEps) {
-            OscillationMode mode;
-            mode.eigenvalue = lambda;
-            const double sigma = lambda.real();
-            const double omega = std::abs(lambda.imag());
-            mode.period = 2.0 * M_PI / omega;
-            mode.logarithmic_decrement = -sigma * mode.period;
-            mode.decay_ratio = std::exp(mode.logarithmic_decrement);
-            result.oscillation_modes.push_back(mode);
-        }
-    }
-    return result;
+    return RootsProcessing(solver);
 }
 
 StabilityResult AnalyzeStabilityFull(const VehicleData& data) {
@@ -95,35 +68,8 @@ StabilityResult AnalyzeStabilityFull(const VehicleData& data) {
     A(4, 4) = data.der.dM_dphidot / data.geometry.I_phi;
 
     Eigen::EigenSolver<Eigen::Matrix<double, 5, 5>> solver(A);
-    // ... остальной код обработки СЗ аналогичен ...
-    if (solver.info() != Eigen::Success) {
-        throw std::runtime_error("Eigen solver failed to converge.");
-    }
 
-    StabilityResult result;
-    result.max_real_part = -1e18;
-    result.is_stable = true;
-
-    auto evals = solver.eigenvalues();
-    for (int i = 0; i < evals.size(); ++i) {
-        std::complex<double> lambda = evals[i];
-        result.eigenvalues.push_back(lambda);
-        if (lambda.real() > result.max_real_part)
-            result.max_real_part = lambda.real();
-        if (lambda.real() > kEps) result.is_stable = false;
-
-        if (std::abs(lambda.imag()) > kEps) {
-            OscillationMode mode;
-            mode.eigenvalue = lambda;
-            const double sigma = lambda.real();
-            const double omega = std::abs(lambda.imag());
-            mode.period = 2.0 * M_PI / omega;
-            mode.logarithmic_decrement = -sigma * mode.period;
-            mode.decay_ratio = std::exp(mode.logarithmic_decrement);
-            result.oscillation_modes.push_back(mode);
-        }
-    }
-    return result;
+    return RootsProcessing(solver);
 }
 
 }  // namespace acv

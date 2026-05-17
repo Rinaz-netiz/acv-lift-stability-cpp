@@ -15,10 +15,7 @@ struct AnalyticalResult {
 
 AnalyticalResult VerifyAnalyticalDetailed(const VehicleData& data);
 
-/**
- * Проверяет достаточное условие устойчивости (уравнение 32 из статьи).
- * Возвращает true, если система устойчива.
- */
+// Проверяет достаточное условие устойчивости (уравнение 32 из статьи).
 bool AnalyticalVerification(const VehicleData& data);
 
 }  // namespace acv

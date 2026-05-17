@@ -7,6 +7,7 @@
 #include <iterator>
 #include <nlohmann/json.hpp>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "my_project/constants.h"
@@ -14,22 +15,16 @@
 
 namespace acv {
 
-// ============================================================
 // Linear interpolation
-// ============================================================
-
-/**
- * Вспомогательная функция для поиска индекса правого края интервала.
- * Возвращает индекс i, такой что x находится между xs[i-1] и xs[i].
- */
 static size_t FindInterval(const std::vector<double>& xs, double x) {
-    // Бинарный поиск: ищем первый элемент, который не меньше x
     auto it = std::lower_bound(xs.begin(), xs.end(), x);
 
-    // Если x <= xs.front(), lower_bound вернет begin()
-    if (it == xs.begin()) return 1;
-    // Если x больше последнего, вернет end()
-    if (it == xs.end()) return xs.size() - 1;
+    if (it == xs.begin()) {
+        return 1;
+    }
+    if (it == xs.end()) {
+        return xs.size() - 1;
+    }
 
     return std::distance(xs.begin(), it);
 }
@@ -37,17 +32,23 @@ static size_t FindInterval(const std::vector<double>& xs, double x) {
 static double LinearInterp(const std::vector<double>& xs,
                            const std::vector<double>& ys, double x) {
     const size_t n = xs.size();
-    if (n < 2) throw std::runtime_error("Interpolation table too small");
+    if (n < 2) {
+        throw std::runtime_error("Interpolation table too small");
+    }
 
-    // Граничные условия (Clamping)
-    if (x <= xs.front()) return ys.front();
-    if (x >= xs.back()) return ys.back();
+    if (x <= xs.front()) {
+        return ys.front();
+    }
+    if (x >= xs.back()) {
+        return ys.back();
+    }
 
-    // Быстрый поиск нужного интервала O(log N)
     size_t i = FindInterval(xs, x);
 
     double dx = xs[i] - xs[i - 1];
-    if (dx == 0.0) return ys[i - 1];  // Защита от деления на 0
+    if (dx == 0.0) {
+        return ys[i - 1];
+    }
 
     double t = (x - xs[i - 1]) / dx;
     return ys[i - 1] + t * (ys[i] - ys[i - 1]);
@@ -58,7 +59,6 @@ static double LinearInterpDerivative(const std::vector<double>& xs,
     const size_t n = xs.size();
     if (n < 2) throw std::runtime_error("Interpolation table too small");
 
-    // Для производной на границах и за ними возвращаем наклон крайних сегментов
     size_t i;
     if (x <= xs.front()) {
         i = 1;
@@ -69,16 +69,14 @@ static double LinearInterpDerivative(const std::vector<double>& xs,
     }
 
     double dx = xs[i] - xs[i - 1];
-    if (dx == 0.0)
-        return 0.0;  // Наклон вертикальной линии неопределен, возвращаем 0
+    if (dx == 0.0) {
+        return 0.0;
+    }
 
     return (ys[i] - ys[i - 1]) / dx;
 }
 
-// ============================================================
 // BlowerCurve
-// ============================================================
-
 double BlowerCurve::Flow(double p) const {
     if (!p_table.empty()) {
         return LinearInterp(p_table, Q_table, p);
@@ -101,13 +99,11 @@ double CushionDampingCurve::Value(double r) const {
     return LinearInterp(Sgap_over_S_table, D_table, r);
 }
 
-// ============================================================
 // SealMomentCurve
-// ============================================================
-
 double SealMomentCurve::Moment(double phi, double L) const {
-    if (phi_table.empty())
+    if (phi_table.empty()) {
         throw std::runtime_error("SealMomentCurve: table is empty");
+    }
 
     double M_per_L = LinearInterp(phi_table, M_per_L_table, phi);
     return M_per_L * L;
@@ -122,32 +118,25 @@ double SealMomentCurve::Derivative(double phi, double L) const {
     return dM_per_L_dphi * L;
 }
 
-// ============================================================
 // Eq. (24): gap under the seal
 // h_gap = (H - H_init) + l*(1 - cos(φ))
-// ============================================================
 static double ComputeGap(const VehicleGeometry& g, double H, double phi) {
     return (H - g.H_init) + g.l * (1.0 - std::cos(phi));
 }
 
-// ============================================================
 // Eq. (11): outflow rate
 // Q_out = χ * sqrt(2p/ρ) * L * h_gap
-// ============================================================
 static double ComputeQout(double p, double h_gap, double L) {
     using namespace constants;
     if (h_gap <= 0.0) return 0.0;
     return kChi * std::sqrt(2.0 * p / kRhoAir) * L * h_gap;
 }
 
-// ============================================================
 // Eq. (33): equilibrium conditions
 //
 //   (1)  p * S = m * g
 //   (2)  Q_in(p) = χ*sqrt(2p/ρ)*L*(H - H_init + l*(1-cos(φ)))
 //   (3)  p * L * l²/2 = -M(φ, 0)
-// ============================================================
-
 void VehicleData::ComputeEquilibrium() {
     using namespace constants;
 
@@ -160,7 +149,9 @@ void VehicleData::ComputeEquilibrium() {
     // ---- Step 1: p0 from Eq. (33, line 1) ----
     eq.p0 = (m * g) / S;
 
-    if (eq.p0 <= 0.0) throw std::runtime_error("Equilibrium pressure p0 <= 0");
+    if (eq.p0 <= 0.0) {
+        throw std::runtime_error("Equilibrium pressure p0 <= 0");
+    }
 
     // ---- Step 2: φ0 from Eq. (33, line 3) ----
     // p0 * L * l²/2 + M(φ0, 0) = 0
@@ -245,22 +236,18 @@ void VehicleData::ComputeEquilibrium() {
     eq.Q0 = Q_in0;  // At equilibrium: Q_in = Q_out = Q0
 
     // ---- Flow balance check ----
-    {
-        double h_check = ComputeGap(geometry, eq.H0, eq.phi0);
-        double Q_out_check = ComputeQout(eq.p0, h_check, geometry.L);
-        double err = std::abs(Q_out_check - eq.Q0) / eq.Q0;
-        if (err > 1e-6) {
-            throw std::runtime_error(
-                "Flow balance check failed: relative error = " +
-                std::to_string(err));
-        }
+
+    double h_check = ComputeGap(geometry, eq.H0, eq.phi0);
+    double Q_out_check = ComputeQout(eq.p0, h_check, geometry.L);
+    double err = std::abs(Q_out_check - eq.Q0) / eq.Q0;
+    if (err > 1e-6) {
+        throw std::runtime_error(
+            "Flow balance check failed: relative error = " +
+            std::to_string(err));
     }
 }
 
-// ============================================================
 // Derivatives at equilibrium — Eq. (25) and related
-// ============================================================
-
 void VehicleData::ComputeDerivatives() {
     using namespace constants;
 
@@ -281,15 +268,12 @@ void VehicleData::ComputeDerivatives() {
 
     der.dQout_dphi = chi_vel * geometry.L * geometry.l * std::sin(eq.phi0);
 
-    // ----------------------------------------------------------
     // ∂Qin/∂p|₀ — from blower curve
-    // ----------------------------------------------------------
     der.dQin_dp = blower.Derivative(eq.p0);  // < 0
 
-    // ----------------------------------------------------------
     // ∂M/∂φ|₀ — from seal moment curve
-    // ----------------------------------------------------------
     der.dM_dphi = seal_moment.Derivative(eq.phi0, geometry.L);  // < 0
+
     // ----------------------------------------------------------
     // ∂M/∂φ̇|₀ — from seal damping curve (Fig. 9) or constant
     //
@@ -326,18 +310,48 @@ void VehicleData::ComputeDerivatives() {
     der.dY_dHdot = -D0 * kRhoAir * eq.Q0;  // < 0
 }
 
-// ============================================================
-// Validation
-// ============================================================
+void SortingInputedCurve(std::vector<double>& arguments,
+                         std::vector<double>& values) {
+    if (values.size() != arguments.size()) {
+        throw std::runtime_error("table sizes mismatch");
+    }
 
+    std::vector<std::pair<double, double>> vec(arguments.size());
+
+    for (size_t ind = 0; ind < vec.size(); ++ind) {
+        vec[ind].first = arguments[ind];
+        vec[ind].second = values[ind];
+    }
+
+    std::sort(vec.begin(), vec.end());
+
+    for (size_t ind = 0; ind < vec.size(); ++ind) {
+        arguments[ind] = vec[ind].first;
+        values[ind] = vec[ind].second;
+    }
+}
+
+// Validation
 void VehicleData::Validate() const {
     // Geometry
-    if (geometry.m <= 0) throw std::runtime_error("m <= 0");
-    if (geometry.L <= 0) throw std::runtime_error("L <= 0");
-    if (geometry.l <= 0) throw std::runtime_error("l <= 0");
-    if (geometry.S <= 0) throw std::runtime_error("S <= 0");
-    if (geometry.W0 <= 0) throw std::runtime_error("W0 <= 0");
-    if (geometry.I_phi <= 0) throw std::runtime_error("I_phi <= 0");
+    if (geometry.m <= 0) {
+        throw std::runtime_error("m <= 0");
+    }
+    if (geometry.L <= 0) {
+        throw std::runtime_error("L <= 0");
+    }
+    if (geometry.l <= 0) {
+        throw std::runtime_error("l <= 0");
+    }
+    if (geometry.S <= 0) {
+        throw std::runtime_error("S <= 0");
+    }
+    if (geometry.W0 <= 0) {
+        throw std::runtime_error("W0 <= 0");
+    }
+    if (geometry.I_phi <= 0) {
+        throw std::runtime_error("I_phi <= 0");
+    }
 
     // Blower
     if (blower.p_table.empty()) {
@@ -351,10 +365,12 @@ void VehicleData::Validate() const {
     }
 
     // Seal moment table
-    if (seal_moment.phi_table.empty())
+    if (seal_moment.phi_table.empty()) {
         throw std::runtime_error("Seal moment table is empty");
-    if (seal_moment.phi_table.size() != seal_moment.M_per_L_table.size())
+    }
+    if (seal_moment.phi_table.size() != seal_moment.M_per_L_table.size()) {
         throw std::runtime_error("Seal moment table sizes mismatch");
+    }
 
     // Seal damping
     const bool has_seal_curve = !seal_damping_curve.h_gap_table.empty() ||
@@ -378,19 +394,29 @@ void VehicleData::Validate() const {
 
     if (has_cushion_curve) {
         if (cushion_damping_curve.Sgap_over_S_table.size() !=
-            cushion_damping_curve.D_table.size())
+            cushion_damping_curve.D_table.size()) {
             throw std::runtime_error("Cushion damping curve sizes mismatch");
-        if (cushion_damping_curve.Sgap_over_S_table.size() < 2)
+        }
+        if (cushion_damping_curve.Sgap_over_S_table.size() < 2) {
             throw std::runtime_error("Cushion damping curve too small");
+        }
     } else {
-        if (D_damping < 0.0) throw std::runtime_error("D_damping must be >= 0");
+        if (D_damping < 0.0) {
+            throw std::runtime_error("D_damping must be >= 0");
+        }
     }
 
     // Post-equilibrium checks
     if (eq.p0 > 0.0) {
-        if (eq.Q0 <= 0.0) throw std::runtime_error("Q0 <= 0");
-        if (eq.h_gap0 <= 0.0) throw std::runtime_error("h_gap0 <= 0");
-        if (eq.phi0 < 0.0) throw std::runtime_error("phi0 < 0");
+        if (eq.Q0 <= 0.0) {
+            throw std::runtime_error("Q0 <= 0");
+        }
+        if (eq.h_gap0 <= 0.0) {
+            throw std::runtime_error("h_gap0 <= 0");
+        }
+        if (eq.phi0 < 0.0) {
+            throw std::runtime_error("phi0 < 0");
+        }
 
         // Necessary stability condition: dQin/dp - dQout/dp < 0
         double crit = der.dQin_dp - der.dQout_dp;
@@ -400,9 +426,12 @@ void VehicleData::Validate() const {
                 "dQin/dp - dQout/dp = " +
                 std::to_string(crit) + " >= 0");
 
-        if (der.dM_dphi >= 0.0) throw std::runtime_error("dM/dphi must be < 0");
-        if (der.dY_dHdot >= 0.0)
+        if (der.dM_dphi >= 0.0) {
+            throw std::runtime_error("dM/dphi must be < 0");
+        }
+        if (der.dY_dHdot >= 0.0) {
             throw std::runtime_error("dY/dHdot must be < 0");
+        }
     }
 }
 
@@ -413,10 +442,7 @@ void VehicleData::Init() {
     Validate();
 }
 
-// ============================================================
 // JSON I/O
-// ============================================================
-
 VehicleData LoadVehicleFromJson(const std::string& filename) {
     std::ifstream file(filename);
     if (!file.is_open())
@@ -443,6 +469,7 @@ VehicleData LoadVehicleFromJson(const std::string& filename) {
     if (bl.contains("p_table")) {
         v.blower.p_table = bl["p_table"].get<std::vector<double>>();
         v.blower.Q_table = bl["Q_table"].get<std::vector<double>>();
+        SortingInputedCurve(v.blower.p_table, v.blower.Q_table);
     } else {
         v.blower.Q_max = bl["Q_max"];
         v.blower.k_fan = bl["k_fan"];
@@ -460,6 +487,8 @@ VehicleData LoadVehicleFromJson(const std::string& filename) {
             sd["h_gap_table"].get<std::vector<double>>();
         v.seal_damping_curve.dM_dphidot_table =
             sd["dM_dphidot_table"].get<std::vector<double>>();
+        SortingInputedCurve(v.seal_damping_curve.h_gap_table,
+                            v.seal_damping_curve.dM_dphidot_table);
     }
     if (j.contains("dM_dphidot")) {
         v.dM_dphidot_input = j["dM_dphidot"];
@@ -472,6 +501,8 @@ VehicleData LoadVehicleFromJson(const std::string& filename) {
             cd["Sgap_over_S_table"].get<std::vector<double>>();
         v.cushion_damping_curve.D_table =
             cd["D_table"].get<std::vector<double>>();
+        SortingInputedCurve(v.cushion_damping_curve.Sgap_over_S_table,
+                            v.cushion_damping_curve.D_table);
     }
     if (j.contains("D_damping")) {
         v.D_damping = j["D_damping"];

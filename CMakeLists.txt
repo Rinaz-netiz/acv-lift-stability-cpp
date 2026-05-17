@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.14)
 project(ACV-LiftStability LANGUAGES CXX)
 
+set(CMAKE_TOOLCHAIN_FILE "$ENV{HOME}/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "vcpkg toolchain")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Опция для включения/выключения тестов
 option(BUILD_TESTS "Build tests" ON)

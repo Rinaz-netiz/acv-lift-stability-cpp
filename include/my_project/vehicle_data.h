@@ -5,12 +5,9 @@
 
 namespace acv {
 
-// ============================================================
-// Входные данные — задаются пользователем
-// ============================================================
-
+// Входные данные, задаются пользователем
 struct VehicleGeometry {
-    double m;  // Масса половины КВП, kg  [Table 1]
+    double m;  // Масса половины КВП, kg
     double L;  // Длина, m
     double l;  // Длина эквивалентного стержня (ограждения), m
     double S;  // Площадь воздушной подушки, m²
@@ -62,10 +59,7 @@ struct CushionDampingCurve {
     double Value(double Sgap_over_S) const;  // линейная интерполяция
 };
 
-// ============================================================
-// Результат вычисления равновесия и производных
-// ============================================================
-
+// Результаты вычислений равновесия
 struct EquilibriumState {
     double p0;    // Избыточное давление в подушке, Pa
     double phi0;  // Угол отклонения ограждения, rad
@@ -93,14 +87,10 @@ struct LinearizedDerivatives {
     double dY_dHdot;  // < 0
 };
 
-// ============================================================
-// Полное описание КВП
-// ============================================================
-
 struct VehicleData {
     std::string name;
 
-    // ===== Входные данные =====
+    // Входные данные
     VehicleGeometry geometry{};
     BlowerCurve blower{};
     SealMomentCurve seal_moment{};
@@ -117,22 +107,21 @@ struct VehicleData {
     // Задаём как: dY_dHdot = D_coeff * rho * Q0  (с нужным знаком)
     double D_damping = 0.0;  // коэффициент D из рис. 4 (положительный)
 
-    // ===== Вычисляемые результаты =====
+    // Вычисляемые результаты
     EquilibriumState eq{};        // Равновесие
     LinearizedDerivatives der{};  // Производные
 
-    // ===== API =====
     void Init();  // Вычислить eq и der, проверить
 
    private:
     void ComputeEquilibrium();
     void ComputeDerivatives();
     void Validate() const;
+    void SortingInputedCurve(std::vector<double>& arguments,
+                             std::vector<double>& values);
 };
 
-// ============================================================
 // Загрузка / сохранение
-// ============================================================
 VehicleData LoadVehicleFromJson(const std::string& filename);
 void SaveVehicleToJson(const VehicleData& v, const std::string& filename);
 
