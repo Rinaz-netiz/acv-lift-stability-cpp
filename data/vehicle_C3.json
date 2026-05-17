@@ -13,12 +13,12 @@
   "equilibrium": {
     "p0": 3016.0,
     "Q0": 88.38,
-    "phi0": 0.31
+    "phi0": 0.12
   },
 
   "derivatives": {
     "dQin_dp": -0.009,
-    "dM_dphi_per_L": -37405.0,
+    "dM_dphi_per_L": -54850.0,
     "dM_dphidot": -543.0,
     "dY_dHdot_factor": -2154.0
   }
