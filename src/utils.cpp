@@ -25,6 +25,8 @@ void PrintAnalyticalAnalysis(const AnalyticalResult& res) {
     std::cout << "Геометрический вклад (Term 2): " << res.geometric_term
               << "\n";
 
+    std::cout << "Отношение: " << res.influence_ratio << "\n";
+
     if (res.influence_ratio > 1.0) {
         std::cout << "Доминирующий фактор: Характеристики нагнетателя и объем "
                      "подушки.\n";

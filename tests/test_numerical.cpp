@@ -46,6 +46,7 @@ TEST_F(NumericalTest, FullAnalysisReturnsFiveEigenvalues) {
 }
 
 TEST_F(NumericalTest, StableSystemHasNegativeRealParts) {
+    using namespace constants;
     VehicleData v = CreateTestVehicle();
     StabilityResult result = AnalyzeStabilitySimple(v);
 
@@ -71,6 +72,8 @@ TEST_F(NumericalTest, MaxRealPartIsConsistent) {
 }
 
 TEST_F(NumericalTest, OscillationModesHavePositiveImaginaryPart) {
+    using namespace constants;
+
     VehicleData v = CreateTestVehicle();
     StabilityResult result = AnalyzeStabilityFull(v);
 
@@ -120,6 +123,8 @@ TEST_F(NumericalTest, FullModelIncludesVerticalDynamics) {
 }
 
 TEST_F(NumericalTest, UnstableSystemDetected) {
+    using namespace constants;
+
     VehicleData v = CreateTestVehicle();
     v.dQin_dp = -0.00001;  // Very weak stabilization
     v.phi0 = 0.8;          // Large angle
