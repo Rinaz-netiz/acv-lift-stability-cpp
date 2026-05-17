@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(ACV-LiftStability LANGUAGES CXX)
 
+set(CMAKE_TOOLCHAIN_FILE "/home/rinaz/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "vcpkg toolchain")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
